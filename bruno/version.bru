@@ -1,0 +1,11 @@
+meta {
+  name: version
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://{{host}}:{{port}}/api/server/version
+  body: none
+  auth: inherit
+}

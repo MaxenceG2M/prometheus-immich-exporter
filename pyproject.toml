@@ -1,0 +1,24 @@
+[project]
+name = "immich-exporter"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "prometheus-client>=0.22.0",
+    "psutil>=7.0.0",
+    "python-json-logger>=3.3.0",
+    "requests>=2.32.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.12",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+immich_exporter = "immich_exporter.exporter:main"

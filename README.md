@@ -52,6 +52,13 @@ The application reads configuration using environment variables:
 | `EXPORTER_LOG_LEVEL` | `INFO`   | Log level. One of: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `METRICS_PREFIX`     | `immich` | Prefix to add to all the metrics                   |
 
+## Local run
+
+You can use [uv] to run the script:
+
+```sh
+$ uv run --env-file .env immich_exporter
+```
 
 ## Metrics
 

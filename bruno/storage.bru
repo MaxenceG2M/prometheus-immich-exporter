@@ -1,0 +1,11 @@
+meta {
+  name: storage
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://{{host}}:{{port}}/api/server/storage
+  body: none
+  auth: inherit
+}

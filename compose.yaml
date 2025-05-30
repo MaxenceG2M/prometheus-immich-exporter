@@ -1,0 +1,14 @@
+services:
+  immich_exporter:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    networks:
+      - immich_default
+
+networks:
+  # Attach to an existing immich instance
+  immich_default:
+    external: true

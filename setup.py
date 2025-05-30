@@ -13,14 +13,12 @@ setup(
     long_description_content_type="text/markdown",
     description='Prometheus exporter for immich',
    # forked from:
-   # author='Esteban Sanchez',
-   # author_email='esteban.sanchez@gmail.com',
-   # url='https://github.com/esanchezm/prometheus-qbittorrent-exporter',
-   # download_url='https://github.com/esanchezm/prometheus-qbittorrent-exporter/archive/1.1.0.tar.gz',
+   # author='friendlyFriend4000',
+   # author_email='mailto:127642970+friendlyFriend4000@users.noreply.github.com',
+   # url='https://github.com/friendlyFriend4000/prometheus-immich-exporter',
     keywords=['prometheus', 'immich'],
     classifiers=[],
     python_requires='>=3',
-    install_requires=['attrdict==2.0.1', 'prometheus_client==0.19.0 ', 'requests==2.31.0', 'python-json-logger==2.0.7', 'psutil==5.9.8'],
     entry_points={
         'console_scripts': [
             'immich_exporter=immich_exporter.exporter:main',
