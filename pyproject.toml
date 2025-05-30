@@ -22,3 +22,10 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 immich_exporter = "immich_exporter.exporter:main"
+
+[tool.pylint.'MESSAGES CONTROL']
+disable= [
+    "C0114",  # Missing module docstring
+    "C0115",  # Missing class docstring
+    "C0116",  # Missing function or method docstring
+]

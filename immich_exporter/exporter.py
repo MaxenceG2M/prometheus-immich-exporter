@@ -1,15 +1,14 @@
-import time
-import os
-import sys
-import signal
 import faulthandler
-
-import requests
-import psutil
-
-from prometheus_client import start_http_server
-from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily, REGISTRY
 import logging
+import os
+import signal
+import sys
+import time
+
+import psutil
+import requests
+from prometheus_client import start_http_server
+from prometheus_client.core import REGISTRY, CounterMetricFamily, GaugeMetricFamily
 from pythonjsonlogger import jsonlogger
 
 # Enable dumps on stderr in case of segfault
@@ -25,13 +24,9 @@ class ImmichMetricsCollector:
         response = requests.request(
             "GET",
             self.combine_url(endpoint),
-            headers={
-                "Accept": "application/json",
-                "x-api-key": self.config["token"]
-            }
+            headers={"Accept": "application/json", "x-api-key": self.config["token"]},
         )
         return response
-
 
     def collect(self):
         logger.info("Requested the metrics")
@@ -67,7 +62,7 @@ class ImmichMetricsCollector:
 
             response_user_stats = self.request(endpoint_user_stats).json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"API ERROR: can't get server statistic: {e}")
+            logger.error("API ERROR: can't get server statistic: %s", e)
 
         user_data = response_user_stats["usageByUser"]
         user_count = len(response_user_stats["usageByUser"])
@@ -84,27 +79,27 @@ class ImmichMetricsCollector:
             metrics.append(
                 {
                     "name": f"{self.config['metrics_prefix']}_server_stats_photos_by_users",
-                    "value": user_data[x]['photos'],
+                    "value": user_data[x]["photos"],
                     "labels": {"firstName": user_data[x]["userName"].split()[0]},
-                    "help": f"Number of photos by user {user_data[x]['userName'].split()[0]} "
+                    "help": f"Number of photos by user {user_data[x]['userName'].split()[0]} ",
                 }
             )
             metrics.append(
                 {
                     "name": f"{self.config['metrics_prefix']}_server_stats_videos_by_users",
-                    "value": user_data[x]['videos'],
+                    "value": user_data[x]["videos"],
                     "labels": {"firstName": user_data[x]["userName"].split()[0]},
-                    "help": f"Number of photos by user {user_data[x]['userName'].split()[0]} "
+                    "help": f"Number of photos by user {user_data[x]['userName'].split()[0]} ",
                 }
             )
             metrics.append(
                 {
                     "name": f"{self.config['metrics_prefix']}_server_stats_usage_by_users",
-                    "value": (user_data[x]['usage']),
+                    "value": (user_data[x]["usage"]),
                     "labels": {
                         "firstName": user_data[x]["userName"].split()[0],
                     },
-                    "help": f"Number of photos by user {user_data[x]['userName'].split()[0]} "
+                    "help": f"Number of photos by user {user_data[x]['userName'].split()[0]} ",
                 }
             )
 
@@ -112,22 +107,22 @@ class ImmichMetricsCollector:
             {
                 "name": f"{self.config['metrics_prefix']}_server_stats_user_count",
                 "value": user_count,
-                "help": "number of users on the immich server"
+                "help": "number of users on the immich server",
             },
             {
                 "name": f"{self.config['metrics_prefix']}_server_stats_photos_growth",
                 "value": photos_growth_total,
-                "help": "photos counter that is added or removed"
+                "help": "photos counter that is added or removed",
             },
             {
                 "name": f"{self.config['metrics_prefix']}_server_stats_videos_growth",
                 "value": videos_growth_total,
-                "help": "videos counter that is added or removed"
+                "help": "videos counter that is added or removed",
             },
             {
                 "name": f"{self.config['metrics_prefix']}_server_stats_usage_growth",
                 "value": usage_growth_total,
-                "help": "videos counter that is added or removed"
+                "help": "videos counter that is added or removed",
             },
         ]
 
@@ -138,7 +133,7 @@ class ImmichMetricsCollector:
             endpoint_storage = "/storage"
             response_storage = self.request(endpoint_storage).json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Couldn't get storage info: {e}")
+            logger.error("Couldn't get storage info: %s", e)
 
         return [
             {
@@ -163,29 +158,32 @@ class ImmichMetricsCollector:
                 "value": (response_storage["diskUsagePercentage"]),
                 "help": "disk usage in percent",
                 # "type": "counter"
-            }
+            },
         ]
 
     def get_immich_server_version_number(self):
-        # Requesting immich_server_number serves two purposes. As the name says it returns the version number
+        # Requesting immich_server_number serves two purposes.
+        # As the name says it returns the version number
         #   1. get version the full server version number
         #   2. check if immich api key is correct
         # throwing connectionRefused exception usually means that immich isn't running
 
         server_version_endpoint = "/version"
 
-        response_server_version = ""
-
         while True:
             try:
                 response = self.request(server_version_endpoint).json()
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Couldn't get server version")
+            except requests.exceptions.RequestException:
+                logger.error("Couldn't get server version")
                 continue
             break
 
         server_version_number = (
-            str(response["major"]) + "." + str(response["minor"]) + "." + str(response["patch"])
+            str(response["major"])
+            + "."
+            + str(response["minor"])
+            + "."
+            + str(response["patch"])
         )
 
         return [
@@ -193,61 +191,60 @@ class ImmichMetricsCollector:
                 "name": f"{self.config['metrics_prefix']}_server_info_version_number",
                 "value": bool(server_version_number),
                 "help": "server version number",
-                "labels": {"version": server_version_number}
-
+                "labels": {"version": server_version_number},
             }
         ]
 
     def get_system_stats(self):
-        loadAvg = os.getloadavg()
-        virtualMem = psutil.virtual_memory()
+        load_avg = os.getloadavg()
+        virtual_mem = psutil.virtual_memory()
         cpu = psutil.cpu_percent(interval=1, percpu=False)
         return [
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_loadAverage",
-                "value": loadAvg[0],
+                "value": load_avg[0],
                 "help": "CPU Load average 1m",
                 "labels": {"period": "1m"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_loadAverage",
-                "value": loadAvg[1],
+                "value": load_avg[1],
                 "help": "CPU Load average 5m",
                 "labels": {"period": "5m"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_loadAverage",
-                "value": loadAvg[2],
+                "value": load_avg[2],
                 "help": "CPU Load average 15m",
                 "labels": {"period": "15m"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_memory",
-                "value": virtualMem[0],
+                "value": virtual_mem[0],
                 "help": "Virtual Memory - Total",
                 "labels": {"type": "Total"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_memory",
-                "value": virtualMem[1],
+                "value": virtual_mem[1],
                 "help": "Virtual Memory - Available",
                 "labels": {"type": "Available"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_memory",
-                "value": virtualMem[2],
+                "value": virtual_mem[2],
                 "help": "Virtual Memory - Percent",
                 "labels": {"type": "Percent"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_memory",
-                "value": virtualMem[3],
+                "value": virtual_mem[3],
                 "help": "Virtual Memory - Used",
                 "labels": {"type": "Used"},
             },
             {
                 "name": f"{self.config['metrics_prefix']}_system_info_memory",
-                "value": virtualMem[4],
+                "value": virtual_mem[4],
                 "help": "Virtual Memory - Free",
                 "labels": {"type": "Free"},
             },
@@ -263,29 +260,31 @@ class ImmichMetricsCollector:
         base_url = self.config["immich_host"]
         base_url_port = self.config["immich_port"]
         base_api_endpoint = "/api/server"
-        combined_url = f"{prefix_url}{base_url}:{base_url_port}{base_api_endpoint}{api_endpoint}"
+        combined_url = (
+            f"{prefix_url}{base_url}:{base_url_port}{base_api_endpoint}{api_endpoint}"
+        )
 
         return combined_url
 
 
 # test
-class SignalHandler():
+class SignalHandler:
     def __init__(self):
-        self.shutdownCount = 0
+        self.shutdown_count = 0
 
         # Register signal handler
         signal.signal(signal.SIGINT, self._on_signal_received)
         signal.signal(signal.SIGTERM, self._on_signal_received)
 
     def is_shutting_down(self):
-        return self.shutdownCount > 0
+        return self.shutdown_count > 0
 
-    def _on_signal_received(self, signal, frame):
-        if self.shutdownCount > 1:
+    def _on_signal_received(self):
+        if self.shutdown_count > 1:
             logger.warning("Forcibly killing exporter")
             sys.exit(1)
         logger.info("Exporter is shutting down")
-        self.shutdownCount += 1
+        self.shutdown_count += 1
 
 
 def get_config_value(key, default=""):
@@ -295,12 +294,12 @@ def get_config_value(key, default=""):
             with open(input_path, "r") as input_file:
                 return input_file.read().strip()
         except IOError as e:
-            logger.error(f"Unable to read value for {key} from {input_path}: {str(e)}")
+            logger.error("Unable to read value for %s from %s: %s", key, input_path, e)
 
     return os.environ.get(key, default)
 
 
-def check_server_up(immichHost, immichPort):
+def check_server_up(immich_host, immich_port):
     counter = 0
 
     while True:
@@ -308,12 +307,15 @@ def check_server_up(immichHost, immichPort):
         try:
             requests.request(
                 "GET",
-                f"http://{immichHost}:{immichPort}/api/server/ping",
-                headers={'Accept': 'application/json'}
+                f"http://{immich_host}:{immich_port}/api/server/ping",
+                headers={"Accept": "application/json"},
             )
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             logger.error(
-                f"CONNECTION ERROR. Cannot reach immich at {immichHost}:{immichPort}. Is immich up and running?")
+                "CONNECTION ERROR. Cannot reach immich at %s:%s. Is immich up and running?",
+                immich_host,
+                immich_port,
+            )
             if 0 <= counter <= 60:
                 time.sleep(1)
             elif 11 <= counter <= 300:
@@ -322,41 +324,37 @@ def check_server_up(immichHost, immichPort):
                 time.sleep(60)
             continue
         break
-    logger.info(f"Found immich up and running at {immichHost}:{immichPort}.")
+    logger.info("Found immich up and running at %s:%s.", immich_host, immich_port)
     logger.info("Attempting to connect to immich")
     time.sleep(1)
     logger.info("Exporter 1.2.1")
 
 
-def check_immich_api_key(immichHost, immichPort, immichApiKey):
+def check_immich_api_key(immich_host, immich_port, immich_api_key):
     while True:
         try:
             requests.request(
                 "GET",
-                f"http://{immichHost}:{immichPort}/api/server/",
-                headers={
-                    "Accept": "application/json",
-                    "x-api-key": immichApiKey
-                }
+                f"http://{immich_host}:{immich_port}/api/server/",
+                headers={"Accept": "application/json", "x-api-key": immich_api_key},
             )
         except requests.exceptions.RequestException as e:
-            logger.error(f"CONNECTION ERROR. Possible API key error")
+            logger.error("CONNECTION ERROR. Possible API key error")
             logger.error({e})
             time.sleep(3)
             continue
-        logger.info(f"Success.")
+        logger.info("Success.")
         break
 
 
 def main():
     # Init logger so it can be used
-    logHandler = logging.StreamHandler()
+    log_handler = logging.StreamHandler()
     formatter = jsonlogger.JsonFormatter(
-        "%(asctime) %(levelname) %(message)",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime) %(levelname) %(message)", datefmt="%Y-%m-%d %H:%M:%S"
     )
-    logHandler.setFormatter(formatter)
-    logger.addHandler(logHandler)
+    log_handler.setFormatter(formatter)
+    logger.addHandler(log_handler)
     logger.setLevel("INFO")  # default until config is loaded
 
     config = {
@@ -380,7 +378,9 @@ def main():
         logger.error("No host specified, please set IMMICH_PORT environment variable")
         sys.exit(1)
     if not config["token"]:
-        logger.error("No token specified, please set IMMICH_API_TOKEN environment variable")
+        logger.error(
+            "No token specified, please set IMMICH_API_TOKEN environment variable"
+        )
         sys.exit(1)
 
     # Register our custom collector
@@ -393,9 +393,7 @@ def main():
     # Start server
     start_http_server(config["exporter_port"])
 
-    logger.info(
-        f"Exporter listening on port {config['exporter_port']}"
-    )
+    logger.info("Exporter listening on port %s", config["exporter_port"])
 
     while not signal_handler.is_shutting_down():
         time.sleep(1)
